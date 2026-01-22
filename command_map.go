@@ -1,16 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
 func commandMap(c *config) error {
+	if c.Next == nil && c.Previous != nil {
+		return errors.New("You are on the last page")
+	}
+
 	locationResp, err := c.pokeapiClient.ListLocations(c.Next)
 	if err != nil {
 		return err
 	}
-	
+
 	c.Next = locationResp.Next
 	c.Previous = locationResp.Previous
 
@@ -19,7 +23,6 @@ func commandMap(c *config) error {
 	}
 
 	return nil
-	
 }
 
 func commandMapB(c *config) error {
@@ -40,6 +43,4 @@ func commandMapB(c *config) error {
 	}
 
 	return nil
-	
 }
-

@@ -5,9 +5,10 @@ import(
 	"fmt"
 	"os"
 	"strings"
+	"github.com/dey12956/pokedexcli/internal/pokeapi"
 )
 
-func startRepl() {
+func startRepl(c *config) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
@@ -19,7 +20,7 @@ func startRepl() {
 		if len(words) == 0 { continue }
 
 		if command, exists := getCommands()[words[0]]; exists{
-			err := command.callback()
+			err := command.callback(c)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -39,10 +40,10 @@ func cleanInput(text string) []string {
 type cliCommand struct {
 	name string
 	description string
-	callback func() error
+	callback func(*config) error
 }
 
-func getCommands() map[string]cliCommand{
+func getCommands() map[string]cliCommand {
 	return map[string]cliCommand{
 		"exit": {
 			name: "exit",
@@ -54,6 +55,24 @@ func getCommands() map[string]cliCommand{
 			description: "Displays a help message",
 			callback: commandHelp,
 		},
+		"map": {
+			name: "map",
+			description: "Get the next page of locations",
+			callback: commandMap,
+		},
+		"mapb": {
+			name: "mapb",
+			description: "Get the previous page of locations",
+			callback: commandMapB,
+		},
 	}
 }
+
+type config struct {
+	pokeapiClient pokeapi.Client
+	Next *string
+	Previous *string
+}
+
+
 

@@ -17,15 +17,15 @@ func commandInspect(c *config, name ...string) error {
 		fmt.Printf("Height: %v\n", poke.height)
 		fmt.Printf("Weight: %v\n", poke.weight)
 		fmt.Println("Stats:")
-		fmt.Printf("	-hp: %v\n", poke.stats["hp"])
-		fmt.Printf("	-attack: %v\n", poke.stats["attack"])
-		fmt.Printf("	-defense: %v\n", poke.stats["defense"])
-		fmt.Printf("	-special-attack: %v\n", poke.stats["special-attack"])
-		fmt.Printf("	-special-defense: %v\n", poke.stats["special-defense"])
-		fmt.Printf("	-speed: %v\n", poke.stats["speed"])
+		fmt.Printf("-hp: %v\n", poke.stats["hp"])
+		fmt.Printf("-attack: %v\n", poke.stats["attack"])
+		fmt.Printf("-defense: %v\n", poke.stats["defense"])
+		fmt.Printf("-special-attack: %v\n", poke.stats["special-attack"])
+		fmt.Printf("-special-defense: %v\n", poke.stats["special-defense"])
+		fmt.Printf("-speed: %v\n", poke.stats["speed"])
 		fmt.Println("Types:")
 		for _, poketype := range poke.types {
-			fmt.Printf("	-%s\n", poketype)
+			fmt.Printf("-%s\n", poketype)
 		}
 	} else {
 		fmt.Println("You have not caught that pokemon")

@@ -6,6 +6,10 @@ import (
 )
 
 func commandMap(c *config, name ...string) error {
+	if len(name) != 0 {
+		return errors.New("Command map doesn't take arguments")
+	}
+
 	if c.Next == nil && c.mapFetched {
 		return errors.New("You are on the last page")
 	}

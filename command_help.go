@@ -1,11 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 )
 
 func commandHelp(c *config, name ...string) error {
+	if len(name) != 0 {
+		return errors.New("Command help doesn't take arguments")
+	}
+
 	fmt.Println()
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")

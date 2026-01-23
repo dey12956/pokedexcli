@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/dey12956/pokedexcli/internal/pokeapi"
 )
@@ -95,6 +96,16 @@ func getCommands() map[string]cliCommand {
 			description: "Get Pokemon located in the specified area",
 			callback:    commandExplore,
 		},
+		"catch": {
+			name:        "catch",
+			description: "Throw a Pokeball at the specified Pokemon",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect a Pokemon you have caught before",
+			callback:    commandInspect,
+		},
 	}
 }
 
@@ -103,4 +114,14 @@ type config struct {
 	Next          *string
 	Previous      *string
 	mapFetched    bool
+	Pokedex       map[string]Pokemon
+}
+
+type Pokemon struct {
+	name       string
+	dateCaught time.Time
+	height     int
+	weight     int
+	stats      map[string]int
+	types      []string
 }

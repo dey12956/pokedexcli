@@ -25,6 +25,7 @@ func commandCatch(c *config, name ...string) error {
 
 	if rand.Float64() < p {
 		fmt.Printf("%s escaped!\n", name[0])
+		return nil
 	} else {
 		fmt.Printf("%s was caught!\n", name[0])
 	}

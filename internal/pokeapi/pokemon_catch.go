@@ -9,6 +9,14 @@ import (
 )
 
 func (c *Client) CatchPokemon(name string) (CatchPokemonResponse, error) {
+	return c.getPokemon(name)
+}
+
+func (c *Client) GetPokemon(name string) (CatchPokemonResponse, error) {
+	return c.getPokemon(name)
+}
+
+func (c *Client) getPokemon(name string) (CatchPokemonResponse, error) {
 	url := baseURL + "/pokemon/" + url.PathEscape(name)
 
 	if data, exists := c.cache.Get(url); exists {

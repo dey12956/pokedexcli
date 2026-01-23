@@ -111,6 +111,11 @@ func getCommands() map[string]cliCommand {
 			description: "Show your Pokedex",
 			callback:    commandPokedex,
 		},
+		"tui": {
+			name:        "tui",
+			description: "Launch the TUI map explorer",
+			callback:    commandTui,
+		},
 	}
 }
 

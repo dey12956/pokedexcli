@@ -6,7 +6,7 @@ import (
 )
 
 func commandMap(c *config) error {
-	if c.Next == nil && c.Previous != nil {
+	if c.Next == nil && c.mapFetched {
 		return errors.New("You are on the last page")
 	}
 
@@ -17,6 +17,7 @@ func commandMap(c *config) error {
 
 	c.Next = locationResp.Next
 	c.Previous = locationResp.Previous
+	c.mapFetched = true
 
 	for _, area := range locationResp.Results {
 		fmt.Println(area.Name)
@@ -37,6 +38,7 @@ func commandMapB(c *config) error {
 
 	c.Next = locationResp.Next
 	c.Previous = locationResp.Previous
+	c.mapFetched = true
 
 	for _, area := range locationResp.Results {
 		fmt.Println(area.Name)

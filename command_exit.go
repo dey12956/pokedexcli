@@ -1,13 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"os"
 )
+
+var errExit = errors.New("exit requested")
 
 func commandExit(c *config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
-	return nil
+	return errExit
 }
-

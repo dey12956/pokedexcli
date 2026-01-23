@@ -1,10 +1,12 @@
 package main
 
-import(
+import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
+
 	"github.com/dey12956/pokedexcli/internal/pokeapi"
 )
 
@@ -13,15 +15,22 @@ func startRepl(c *config) {
 
 	for {
 		fmt.Print("Pokedex > ")
-		if !scanner.Scan() { break }
+		if !scanner.Scan() {
+			break
+		}
 
 		input := scanner.Text()
 		words := cleanInput(input)
-		if len(words) == 0 { continue }
+		if len(words) == 0 {
+			continue
+		}
 
-		if command, exists := getCommands()[words[0]]; exists{
+		if command, exists := getCommands()[words[0]]; exists {
 			err := command.callback(c)
 			if err != nil {
+				if errors.Is(err, errExit) {
+					return
+				}
 				fmt.Println(err)
 			}
 			continue
@@ -29,6 +38,10 @@ func startRepl(c *config) {
 			fmt.Println("Unknown command")
 			continue
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Input error:", err)
 	}
 }
 
@@ -38,41 +51,39 @@ func cleanInput(text string) []string {
 }
 
 type cliCommand struct {
-	name string
+	name        string
 	description string
-	callback func(*config) error
+	callback    func(*config) error
 }
 
 func getCommands() map[string]cliCommand {
 	return map[string]cliCommand{
 		"exit": {
-			name: "exit",
+			name:        "exit",
 			description: "Exit the Pokedex",
-			callback: commandExit,
+			callback:    commandExit,
 		},
 		"help": {
-			name: "help",
+			name:        "help",
 			description: "Displays a help message",
-			callback: commandHelp,
+			callback:    commandHelp,
 		},
 		"map": {
-			name: "map",
+			name:        "map",
 			description: "Get the next page of locations",
-			callback: commandMap,
+			callback:    commandMap,
 		},
 		"mapb": {
-			name: "mapb",
+			name:        "mapb",
 			description: "Get the previous page of locations",
-			callback: commandMapB,
+			callback:    commandMapB,
 		},
 	}
 }
 
 type config struct {
 	pokeapiClient pokeapi.Client
-	Next *string
-	Previous *string
+	Next          *string
+	Previous      *string
+	mapFetched    bool
 }
-
-
-

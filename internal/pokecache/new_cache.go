@@ -7,6 +7,7 @@ import (
 
 const defaultTTL = 5 * time.Minute
 const defaultMaxEntries = 1024
+const defaultReapInterval = 5 * time.Second
 
 type Option func(*Cache)
 
@@ -28,15 +29,18 @@ func WithReapInterval(interval time.Duration) Option {
 	}
 }
 
-func NewCache(interval time.Duration, opts ...Option) *Cache {
-	if interval <= 0 {
-		interval = defaultTTL
+func NewCache(reapInterval time.Duration, ttl time.Duration, opts ...Option) *Cache {
+	if ttl <= 0 {
+		ttl = defaultTTL
+	}
+	if reapInterval <= 0 {
+		reapInterval = defaultReapInterval
 	}
 	c := &Cache{
 		CacheMap:     make(map[string]cacheEntry),
 		mu:           &sync.RWMutex{},
-		ttl:          interval,
-		reapInterval: interval,
+		ttl:          ttl,
+		reapInterval: reapInterval,
 		maxEntries:   defaultMaxEntries,
 		stopCh:       make(chan struct{}),
 		doneCh:       make(chan struct{}),

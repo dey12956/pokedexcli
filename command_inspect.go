@@ -17,8 +17,42 @@ func commandInspect(c *config, name ...string) error {
 
 	if poke, exists := c.Pokedex[name[0]]; exists {
 		fmt.Printf("Name: %s\n", poke.name)
+		fmt.Printf("ID: %d\n", poke.id)
+		if poke.species != "" {
+			fmt.Printf("Species: %s\n", poke.species)
+		}
+		fmt.Printf("Base XP: %d\n", poke.baseExperience)
 		fmt.Printf("Height: %v\n", poke.height)
 		fmt.Printf("Weight: %v\n", poke.weight)
+		fmt.Printf("Order: %d\n", poke.order)
+		fmt.Printf("Default: %t\n", poke.isDefault)
+		fmt.Printf("Moves: %d\n", poke.moveCount)
+		fmt.Println("Abilities:")
+		if len(poke.abilities) == 0 {
+			fmt.Println("-none")
+		} else {
+			for _, ability := range poke.abilities {
+				label := fmt.Sprintf("-%s (slot %d)", ability.name, ability.slot)
+				if ability.isHidden {
+					label = fmt.Sprintf("%s hidden", label)
+				}
+				fmt.Println(label)
+			}
+		}
+		fmt.Println("Held items:")
+		if len(poke.heldItems) == 0 {
+			fmt.Println("-none")
+		} else {
+			for _, item := range poke.heldItems {
+				fmt.Printf("-%s\n", item)
+			}
+		}
+		if len(poke.forms) > 0 {
+			fmt.Println("Forms:")
+			for _, form := range poke.forms {
+				fmt.Printf("-%s\n", form)
+			}
+		}
 		fmt.Println("Stats:")
 		fmt.Printf("-hp: %v\n", poke.stats["hp"])
 		fmt.Printf("-attack: %v\n", poke.stats["attack"])

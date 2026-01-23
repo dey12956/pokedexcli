@@ -125,13 +125,30 @@ type config struct {
 	Previous      *string
 	mapFetched    bool
 	Pokedex       map[string]Pokemon
+	UserName      string
+	StoragePath   string
+}
+
+type pokemonAbility struct {
+	name     string
+	isHidden bool
+	slot     int
 }
 
 type Pokemon struct {
-	name       string
-	dateCaught time.Time
-	height     int
-	weight     int
-	stats      map[string]int
-	types      []string
+	name           string
+	dateCaught     time.Time
+	height         int
+	weight         int
+	stats          map[string]int
+	types          []string
+	id             int
+	baseExperience int
+	order          int
+	isDefault      bool
+	species        string
+	abilities      []pokemonAbility
+	heldItems      []string
+	forms          []string
+	moveCount      int
 }

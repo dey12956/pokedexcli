@@ -13,26 +13,28 @@ import (
 )
 
 type tuiState struct {
-	config      *config
-	app         *tview.Application
-	pages       *tview.Pages
-	mapTable    *tview.Table
-	pokemonList *tview.List
-	asciiView   *tview.TextView
-	statusView  *tview.TextView
-	pokedexList *tview.List
-	pokedexView *tview.TextView
-	inspectView *tview.TextView
-	locations   []string
-	next        *string
-	prev        *string
-	selected    string
-	selectedPkm string
-	inspectName string
-	spriteCache map[string]string
-	focusOnMap  bool
-	focusOnDex  bool
-	activeView  string
+	config        *config
+	app           *tview.Application
+	pages         *tview.Pages
+	mapTable      *tview.Table
+	pokemonList   *tview.List
+	asciiView     *tview.TextView
+	statusView    *tview.TextView
+	root          *tview.Flex
+	pokedexList   *tview.List
+	pokedexView   *tview.TextView
+	inspectView   *tview.TextView
+	locations     []string
+	next          *string
+	prev          *string
+	selected      string
+	selectedPkm   string
+	inspectName   string
+	spriteCache   map[string]string
+	focusOnMap    bool
+	focusOnDex    bool
+	activeView    string
+	statusMessage string
 }
 
 const (
@@ -41,7 +43,8 @@ const (
 	viewInspect = "inspect"
 )
 
-const tuiHelpText = "(h/j/k/l) move  (tab) switch  (c) catch  (m) map  (d) dex  (i) inspect  (n) next  (p) prev  (q) quit"
+const tuiHelpTextFull = "(h/j/k/l) move (tab) switch (c) catch (m) map (d) dex (i) inspect (n) next (p) prev (q) quit"
+const tuiHelpTextShort = "Window small: resize for full help. (h/j/k/l) move (tab) switch (c) catch (m) map (d) dex (i) inspect (q) quit"
 
 func commandTui(c *config, name ...string) error {
 	if len(name) != 0 {
@@ -64,6 +67,8 @@ func commandTui(c *config, name ...string) error {
 	statusView := tview.NewTextView().SetDynamicColors(true)
 	statusView.SetBorder(true).SetTitle("Status")
 	statusView.SetBackgroundColor(tcell.ColorBlack)
+	statusView.SetWrap(true)
+	statusView.SetWordWrap(true)
 	pokedexList := tview.NewList()
 	pokedexList.SetBorder(true).SetTitle("Pokedex")
 	pokedexList.SetBackgroundColor(tcell.ColorBlack)
@@ -113,6 +118,7 @@ func commandTui(c *config, name ...string) error {
 	root := tview.NewFlex().SetDirection(tview.FlexRow)
 	root.AddItem(state.pages, 0, 1, true)
 	root.AddItem(statusView, 3, 1, false)
+	state.root = root
 
 	mapTable.SetSelectionChangedFunc(func(row, column int) {
 		state.selectLocation(row, column)
@@ -180,6 +186,12 @@ func commandTui(c *config, name ...string) error {
 		return event
 	})
 
+	app.SetBeforeDrawFunc(func(screen tcell.Screen) bool {
+		width, _ := screen.Size()
+		state.updateStatusView(width)
+		return false
+	})
+
 	state.setStatus("Loading locations...")
 	if err := state.loadLocations(nil); err != nil {
 		return err
@@ -194,11 +206,97 @@ func commandTui(c *config, name ...string) error {
 }
 
 func (s *tuiState) setStatus(text string) {
-	if text == "" {
-		s.statusView.SetText(tuiHelpText)
+	s.statusMessage = text
+	s.updateStatusView(0)
+}
+
+func (s *tuiState) updateStatusView(width int) {
+	if s.statusView == nil || s.root == nil {
 		return
 	}
-	s.statusView.SetText(fmt.Sprintf("%s  %s", text, tuiHelpText))
+	if width <= 0 {
+		_, _, currentWidth, _ := s.statusView.GetRect()
+		width = currentWidth
+	}
+	if width <= 0 {
+		width = 80
+	}
+	innerWidth := width - 2
+	if innerWidth < 1 {
+		innerWidth = 1
+	}
+
+	helpText := tuiHelpTextFull
+	if wrappedLineCount(tuiHelpTextFull, innerWidth) > 2 {
+		helpText = tuiHelpTextShort
+	}
+
+	text := helpText
+	if strings.TrimSpace(s.statusMessage) != "" {
+		text = fmt.Sprintf("%s %s", s.statusMessage, helpText)
+	}
+
+	s.statusView.SetText(text)
+	height := wrappedLineCount(text, innerWidth) + 2
+	if height < 3 {
+		height = 3
+	}
+	s.root.ResizeItem(s.statusView, height, 0)
+}
+
+func wrappedLineCount(text string, width int) int {
+	if width <= 0 {
+		return 1
+	}
+	lines := 0
+	for _, rawLine := range strings.Split(text, "\n") {
+		line := strings.TrimSpace(rawLine)
+		if line == "" {
+			lines++
+			continue
+		}
+		words := strings.Fields(line)
+		if len(words) == 0 {
+			lines++
+			continue
+		}
+		lineCount := 1
+		lineLen := 0
+		for _, word := range words {
+			wordLen := len(word)
+			if wordLen > width {
+				if lineLen > 0 {
+					lineCount++
+					lineLen = 0
+				}
+				for wordLen > width {
+					lineCount++
+					wordLen -= width
+				}
+				if wordLen == 0 {
+					lineLen = 0
+					continue
+				}
+				lineLen = wordLen
+				continue
+			}
+			if lineLen == 0 {
+				lineLen = wordLen
+				continue
+			}
+			if lineLen+1+wordLen <= width {
+				lineLen += 1 + wordLen
+				continue
+			}
+			lineCount++
+			lineLen = wordLen
+		}
+		lines += lineCount
+	}
+	if lines == 0 {
+		return 1
+	}
+	return lines
 }
 
 func (s *tuiState) toggleFocus() {
@@ -383,7 +481,11 @@ func (s *tuiState) catchSelectedPokemon() {
 		return
 	}
 	if caught {
-		s.setStatus(fmt.Sprintf("%s was caught!", s.selectedPkm))
+		if err := saveUserData(s.config); err != nil {
+			s.setStatus(fmt.Sprintf("%s was caught, but failed to save: %v", s.selectedPkm, err))
+		} else {
+			s.setStatus(fmt.Sprintf("%s was caught!", s.selectedPkm))
+		}
 		s.refreshPokedex()
 		return
 	}
@@ -427,10 +529,35 @@ func (s *tuiState) renderPokedexSummary(name string) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Name: %s\n", poke.name)
 	fmt.Fprintf(&b, "Caught: %s\n", poke.dateCaught.Format("2006-01-02 15:04"))
+	fmt.Fprintf(&b, "ID: %d\n", poke.id)
+	if poke.species != "" {
+		fmt.Fprintf(&b, "Species: %s\n", poke.species)
+	}
+	fmt.Fprintf(&b, "Base XP: %d\n", poke.baseExperience)
 	fmt.Fprintf(&b, "Height: %d\n", poke.height)
 	fmt.Fprintf(&b, "Weight: %d\n", poke.weight)
+	fmt.Fprintf(&b, "Moves: %d\n", poke.moveCount)
 	if len(poke.types) > 0 {
 		fmt.Fprintf(&b, "Types: %s\n", strings.Join(poke.types, ", "))
+	}
+	if len(poke.abilities) > 0 {
+		abilities := make([]string, 0, len(poke.abilities))
+		for _, ability := range poke.abilities {
+			label := ability.name
+			if ability.isHidden {
+				label = fmt.Sprintf("%s (hidden)", label)
+			}
+			abilities = append(abilities, label)
+		}
+		fmt.Fprintf(&b, "Abilities: %s\n", strings.Join(abilities, ", "))
+	}
+	if len(poke.heldItems) > 0 {
+		fmt.Fprintf(&b, "Held items: %s\n", strings.Join(poke.heldItems, ", "))
+	} else {
+		fmt.Fprintln(&b, "Held items: none")
+	}
+	if len(poke.forms) > 0 {
+		fmt.Fprintf(&b, "Forms: %s\n", strings.Join(poke.forms, ", "))
 	}
 
 	s.pokedexView.SetText(b.String())
@@ -449,9 +576,43 @@ func (s *tuiState) renderInspect(name string) {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "Name: %s\n", poke.name)
+	fmt.Fprintf(&b, "ID: %d\n", poke.id)
+	if poke.species != "" {
+		fmt.Fprintf(&b, "Species: %s\n", poke.species)
+	}
+	fmt.Fprintf(&b, "Base XP: %d\n", poke.baseExperience)
 	fmt.Fprintf(&b, "Height: %d\n", poke.height)
 	fmt.Fprintf(&b, "Weight: %d\n", poke.weight)
+	fmt.Fprintf(&b, "Order: %d\n", poke.order)
+	fmt.Fprintf(&b, "Default: %t\n", poke.isDefault)
 	fmt.Fprintf(&b, "Caught: %s\n", poke.dateCaught.Format(time.RFC3339))
+	fmt.Fprintf(&b, "Moves: %d\n", poke.moveCount)
+	fmt.Fprintln(&b, "Abilities:")
+	if len(poke.abilities) == 0 {
+		fmt.Fprintln(&b, "-none")
+	} else {
+		for _, ability := range poke.abilities {
+			label := fmt.Sprintf("-%s (slot %d)", ability.name, ability.slot)
+			if ability.isHidden {
+				label = fmt.Sprintf("%s hidden", label)
+			}
+			fmt.Fprintln(&b, label)
+		}
+	}
+	fmt.Fprintln(&b, "Held items:")
+	if len(poke.heldItems) == 0 {
+		fmt.Fprintln(&b, "-none")
+	} else {
+		for _, item := range poke.heldItems {
+			fmt.Fprintf(&b, "-%s\n", item)
+		}
+	}
+	if len(poke.forms) > 0 {
+		fmt.Fprintln(&b, "Forms:")
+		for _, form := range poke.forms {
+			fmt.Fprintf(&b, "-%s\n", form)
+		}
+	}
 	fmt.Fprintln(&b, "Stats:")
 	fmt.Fprintf(&b, "-hp: %d\n", poke.stats["hp"])
 	fmt.Fprintf(&b, "-attack: %d\n", poke.stats["attack"])

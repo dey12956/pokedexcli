@@ -18,15 +18,11 @@ func commandCatch(c *config, name ...string) error {
 	fmt.Println()
 	fmt.Printf("Throwing a Pokeball at %s...\n", name[0])
 
-	catchPokeResp, err := c.pokeapiClient.CatchPokemon(name[0])
+	caught, err := attemptCatch(c, name[0])
 	if err != nil {
 		return err
 	}
-
-	baseXP := catchPokeResp.BaseExperience
-	p := catchProb(baseXP)
-
-	if rand.Float64() < p {
+	if caught {
 		fmt.Printf("%s was caught!\n", name[0])
 	} else {
 		fmt.Printf("%s escaped!\n", name[0])
@@ -34,6 +30,22 @@ func commandCatch(c *config, name ...string) error {
 	}
 
 	fmt.Println()
+
+	return nil
+}
+
+func attemptCatch(c *config, name string) (bool, error) {
+	catchPokeResp, err := c.pokeapiClient.CatchPokemon(name)
+	if err != nil {
+		return false, err
+	}
+
+	baseXP := catchPokeResp.BaseExperience
+	p := catchProb(baseXP)
+
+	if rand.Float64() >= p {
+		return false, nil
+	}
 
 	stats := make(map[string]int)
 	for _, stat := range catchPokeResp.Stats {
@@ -45,8 +57,8 @@ func commandCatch(c *config, name ...string) error {
 		types = append(types, poketype.Type.Name)
 	}
 
-	c.Pokedex[name[0]] = Pokemon{
-		name:       name[0],
+	c.Pokedex[name] = Pokemon{
+		name:       name,
 		dateCaught: time.Now(),
 		height:     catchPokeResp.Height,
 		weight:     catchPokeResp.Weight,
@@ -54,7 +66,7 @@ func commandCatch(c *config, name ...string) error {
 		types:      types,
 	}
 
-	return nil
+	return true, nil
 }
 
 func catchProb(baseXP int) float64 {

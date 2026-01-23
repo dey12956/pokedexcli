@@ -1,15 +1,20 @@
 package main
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
+
+const floatTolerance = 1e-9
 
 func TestCatchProbBounds(t *testing.T) {
-	if got := catchProb(36); got != 0.79 {
+	if got := catchProb(36); math.Abs(got-0.79) > floatTolerance {
 		t.Fatalf("expected 0.79 at min XP, got %v", got)
 	}
-	if got := catchProb(255); got != 0.30 {
+	if got := catchProb(255); math.Abs(got-0.30) > floatTolerance {
 		t.Fatalf("expected 0.30 at kink XP, got %v", got)
 	}
-	if got := catchProb(608); got != 0.08 {
+	if got := catchProb(608); math.Abs(got-0.08) > floatTolerance {
 		t.Fatalf("expected 0.08 at max XP, got %v", got)
 	}
 }

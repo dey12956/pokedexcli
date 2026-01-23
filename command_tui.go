@@ -43,8 +43,8 @@ const (
 	viewInspect = "inspect"
 )
 
-const tuiHelpTextFull = "(h/j/k/l) move (tab) switch (c) catch (m) map (d) dex (i) inspect (n) next (p) prev (q) quit"
-const tuiHelpTextShort = "Window small: resize for full help. (h/j/k/l) move (tab) switch (c) catch (m) map (d) dex (i) inspect (q) quit"
+const tuiHelpTextFull = "(h/j/k/l) move (tab) switch (m) map (d) dex (i) inspect (n) next (p) prev (q) quit"
+const tuiHelpTextShort = "Window small: resize for full help. (h/j/k/l) move (tab) switch (m) map (d) dex (i) inspect (q) quit"
 
 func commandTui(c *config, name ...string) error {
 	if len(name) != 0 {
@@ -165,11 +165,6 @@ func commandTui(c *config, name ...string) error {
 			case 'p':
 				if state.activeView == viewMap {
 					state.loadPrevLocations()
-				}
-				return nil
-			case 'c':
-				if state.activeView == viewMap {
-					state.catchSelectedPokemon()
 				}
 				return nil
 			case 'm':
@@ -468,30 +463,6 @@ func (s *tuiState) selectPokemon(name string) {
 	s.setStatus("Sprite loaded")
 }
 
-func (s *tuiState) catchSelectedPokemon() {
-	if s.selectedPkm == "" {
-		s.setStatus("No Pokemon selected")
-		return
-	}
-
-	s.setStatus(fmt.Sprintf("Throwing a Pokeball at %s...", s.selectedPkm))
-	caught, err := attemptCatch(s.config, s.selectedPkm)
-	if err != nil {
-		s.setStatus(fmt.Sprintf("Error catching Pokemon: %v", err))
-		return
-	}
-	if caught {
-		if err := saveUserData(s.config); err != nil {
-			s.setStatus(fmt.Sprintf("%s was caught, but failed to save: %v", s.selectedPkm, err))
-		} else {
-			s.setStatus(fmt.Sprintf("%s was caught!", s.selectedPkm))
-		}
-		s.refreshPokedex()
-		return
-	}
-	s.setStatus(fmt.Sprintf("%s escaped!", s.selectedPkm))
-}
-
 func (s *tuiState) refreshPokedex() {
 	s.pokedexList.Clear()
 	if len(s.config.Pokedex) == 0 {
@@ -505,7 +476,9 @@ func (s *tuiState) refreshPokedex() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		s.pokedexList.AddItem(name, "", 0, nil)
+		count := len(s.config.Pokedex[name])
+		label := fmt.Sprintf("%s (x%d)", name, count)
+		s.pokedexList.AddItem(label, "", 0, nil)
 	}
 	s.pokedexList.SetCurrentItem(0)
 }
@@ -515,16 +488,21 @@ func (s *tuiState) selectPokedexPokemon(name string) {
 		s.pokedexView.SetText("No Pokemon selected")
 		return
 	}
-	s.inspectName = name
-	s.renderPokedexSummary(name)
+	trimmed := name
+	if idx := strings.Index(name, " ("); idx > 0 {
+		trimmed = name[:idx]
+	}
+	s.inspectName = trimmed
+	s.renderPokedexSummary(trimmed)
 }
 
 func (s *tuiState) renderPokedexSummary(name string) {
-	poke, exists := s.config.Pokedex[name]
-	if !exists {
+	entries, exists := s.config.Pokedex[name]
+	if !exists || len(entries) == 0 {
 		s.pokedexView.SetText("Pokemon not found")
 		return
 	}
+	poke := entries[len(entries)-1]
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "Name: %s\n", poke.name)
@@ -568,11 +546,12 @@ func (s *tuiState) renderInspect(name string) {
 		s.inspectView.SetText("No Pokemon selected")
 		return
 	}
-	poke, exists := s.config.Pokedex[name]
-	if !exists {
+	entries, exists := s.config.Pokedex[name]
+	if !exists || len(entries) == 0 {
 		s.inspectView.SetText("You have not caught that pokemon")
 		return
 	}
+	poke := entries[len(entries)-1]
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "Name: %s\n", poke.name)

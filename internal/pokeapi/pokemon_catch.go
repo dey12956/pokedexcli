@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 func (c *Client) CatchPokemon(name string) (CatchPokemonResponse, error) {
-	url := baseURL + "/pokemon/" + name
+	url := baseURL + "/pokemon/" + url.PathEscape(name)
 
 	if data, exists := c.cache.Get(url); exists {
 		catchPokeResp := CatchPokemonResponse{}

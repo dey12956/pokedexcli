@@ -11,6 +11,9 @@ func commandCatch(c *config, name ...string) error {
 	if len(name) == 0 {
 		return errors.New("Enter an Pokemon to catch")
 	}
+	if len(name) > 1 {
+		return errors.New("Command catch takes a single Pokemon")
+	}
 
 	fmt.Println()
 	fmt.Printf("Throwing a Pokeball at %s...\n", name[0])
@@ -24,10 +27,10 @@ func commandCatch(c *config, name ...string) error {
 	p := catchProb(baseXP)
 
 	if rand.Float64() < p {
+		fmt.Printf("%s was caught!\n", name[0])
+	} else {
 		fmt.Printf("%s escaped!\n", name[0])
 		return nil
-	} else {
-		fmt.Printf("%s was caught!\n", name[0])
 	}
 
 	fmt.Println()
@@ -60,25 +63,25 @@ func catchProb(baseXP int) float64 {
 		kink  = 255
 		maxXP = 608
 
-		pMin = 0.08
-		pK   = 0.40
-		pMax = 0.95
+		pEasy = 0.95
+		pK    = 0.40
+		pHard = 0.08
 	)
 
 	if baseXP <= minXP {
-		return pMin
+		return pEasy
 	}
 	if baseXP >= maxXP {
-		return pMax
+		return pHard
 	}
 
 	x := float64(baseXP)
 
 	if baseXP <= kink {
 		t := (x - minXP) / float64(kink-minXP)
-		return pMin + (pK-pMin)*t
+		return pEasy + (pK-pEasy)*t
 	}
 
 	t := (x - kink) / float64(maxXP-kink)
-	return pK + (pMax-pK)*t
+	return pK + (pHard-pK)*t
 }

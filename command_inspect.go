@@ -9,6 +9,9 @@ func commandInspect(c *config, name ...string) error {
 	if len(name) == 0 {
 		return errors.New("Enter a Pokemon to inspect")
 	}
+	if len(name) > 1 {
+		return errors.New("Command inspect takes a single Pokemon")
+	}
 
 	fmt.Println()
 

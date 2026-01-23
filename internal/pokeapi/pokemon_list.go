@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 func (c *Client) ListPokemon(area string) (PokemonResponse, error) {
-	url := baseURL + "/location-area/" + area
+	url := baseURL + "/location-area/" + url.PathEscape(area)
 
 	if data, exists := c.cache.Get(url); exists {
 		pokemonResp := PokemonResponse{}

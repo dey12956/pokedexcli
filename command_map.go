@@ -31,6 +31,9 @@ func commandMap(c *config, name ...string) error {
 }
 
 func commandMapB(c *config, name ...string) error {
+	if len(name) != 0 {
+		return errors.New("Command mapb doesn't take arguments")
+	}
 	if c.Previous == nil {
 		return errors.New("You are on the first page")
 	}

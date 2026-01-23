@@ -9,6 +9,9 @@ func commandExplore(c *config, name ...string) error {
 	if len(name) == 0 {
 		return errors.New("Enter an area to explore")
 	}
+	if len(name) > 1 {
+		return errors.New("Command explore takes a single area")
+	}
 
 	fmt.Println()
 	fmt.Printf("Exploring %s...\n", name[0])

@@ -17,9 +17,10 @@ func (c *Client) ListLocations(pageURL *string) (Response, error) {
 		locationResp := Response{}
 		err := json.Unmarshal(data, &locationResp)
 		if err != nil {
-			return Response{}, err
+			c.cache.Delete(url)
+		} else {
+			return locationResp, nil
 		}
-		return locationResp, nil
 	}
 
 	req, err := http.NewRequest("GET", url, nil)

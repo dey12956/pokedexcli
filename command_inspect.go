@@ -15,11 +15,18 @@ func commandInspect(c *config, name ...string) error {
 
 	fmt.Println()
 
-	if poke, exists := c.Pokedex[name[0]]; exists {
+	if entries, exists := c.Pokedex[name[0]]; exists && len(entries) > 0 {
+		poke := entries[len(entries)-1]
 		fmt.Printf("Name: %s\n", poke.name)
 		fmt.Printf("ID: %d\n", poke.id)
 		if poke.species != "" {
 			fmt.Printf("Species: %s\n", poke.species)
+		}
+		if poke.level > 0 {
+			fmt.Printf("Level: %d\n", poke.level)
+		}
+		if poke.experience > 0 {
+			fmt.Printf("XP: %d\n", poke.experience)
 		}
 		fmt.Printf("Base XP: %d\n", poke.baseExperience)
 		fmt.Printf("Height: %v\n", poke.height)
@@ -27,6 +34,12 @@ func commandInspect(c *config, name ...string) error {
 		fmt.Printf("Order: %d\n", poke.order)
 		fmt.Printf("Default: %t\n", poke.isDefault)
 		fmt.Printf("Moves: %d\n", poke.moveCount)
+		if len(poke.moves) > 0 {
+			fmt.Println("Move details:")
+			for _, move := range poke.moves {
+				fmt.Printf("-%s (power %d, accuracy %d, priority %d, type %s)\n", move.name, move.power, move.accuracy, move.priority, move.moveType)
+			}
+		}
 		fmt.Println("Abilities:")
 		if len(poke.abilities) == 0 {
 			fmt.Println("-none")

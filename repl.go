@@ -1,26 +1,34 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/dey12956/pokedexcli/internal/pokeapi"
+	"github.com/peterh/liner"
 )
 
 func startRepl(c *config) {
-	scanner := bufio.NewScanner(os.Stdin)
+	line := liner.NewLiner()
+	defer line.Close()
+	line.SetCtrlCAborts(true)
 
 	for {
-		fmt.Print("Pokedex > ")
-		if !scanner.Scan() {
+		input, err := line.Prompt("Pokedex > ")
+		if err != nil {
+			if errors.Is(err, liner.ErrPromptAborted) {
+				fmt.Println()
+				continue
+			}
 			break
 		}
-
-		input := scanner.Text()
+		input = strings.TrimSpace(input)
+		if input == "" {
+			continue
+		}
+		line.AppendHistory(input)
 		words := cleanInput(input)
 		if len(words) == 0 {
 			continue
@@ -30,7 +38,7 @@ func startRepl(c *config) {
 
 		if exists {
 			if len(words) > 1 {
-				err := command.callback(c, words[1])
+				err := command.callback(c, words[1:]...)
 				if err != nil {
 					if errors.Is(err, errExit) {
 						return
@@ -53,9 +61,6 @@ func startRepl(c *config) {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Input error:", err)
-	}
 }
 
 func cleanInput(text string) []string {
@@ -83,23 +88,23 @@ func getCommands() map[string]cliCommand {
 		},
 		"map": {
 			name:        "map",
-			description: "Get the next page of locations",
+			description: "Get the next page of locations (number to explore, arrows to page)",
 			callback:    commandMap,
 		},
 		"mapb": {
 			name:        "mapb",
-			description: "Get the previous page of locations",
+			description: "Get the previous page of locations (number to explore, arrows to page)",
 			callback:    commandMapB,
 		},
 		"explore": {
 			name:        "explore",
-			description: "Get Pokemon located in the specified area",
+			description: "Get Pokemon located in the specified area (enter a number to battle)",
 			callback:    commandExplore,
 		},
-		"catch": {
-			name:        "catch",
-			description: "Throw a Pokeball at the specified Pokemon",
-			callback:    commandCatch,
+		"battle": {
+			name:        "battle",
+			description: "Battle a wild Pokemon",
+			callback:    commandBattle,
 		},
 		"inspect": {
 			name:        "inspect",
@@ -120,19 +125,36 @@ func getCommands() map[string]cliCommand {
 }
 
 type config struct {
-	pokeapiClient pokeapi.Client
-	Next          *string
-	Previous      *string
-	mapFetched    bool
-	Pokedex       map[string]Pokemon
-	UserName      string
-	StoragePath   string
+	pokeapiClient  pokeapi.Client
+	Next           *string
+	Previous       *string
+	mapFetched     bool
+	Pokedex        map[string][]Pokemon
+	Inventory      Inventory
+	UserName       string
+	StoragePath    string
+	LastDailyGrant string
 }
 
 type pokemonAbility struct {
 	name     string
 	isHidden bool
 	slot     int
+}
+
+type PokemonMove struct {
+	name     string
+	power    int
+	accuracy int
+	moveType string
+	priority int
+}
+
+type Inventory struct {
+	Pokeball  int
+	GreatBall int
+	UltraBall int
+	Potion    int
 }
 
 type Pokemon struct {
@@ -150,5 +172,12 @@ type Pokemon struct {
 	abilities      []pokemonAbility
 	heldItems      []string
 	forms          []string
+	moves          []PokemonMove
 	moveCount      int
+	level          int
+	experience     int
+	growthRate     string
+	evolutionChain string
+	lastXPAt       time.Time
+	lastXPGain     int
 }

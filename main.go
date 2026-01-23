@@ -24,19 +24,29 @@ func main() {
 
 	c := &config{
 		pokeapiClient: pokeClient,
-		Pokedex:       make(map[string]Pokemon),
+		Pokedex:       make(map[string][]Pokemon),
+		Inventory:     defaultInventory(),
 		UserName:      userName,
 		StoragePath:   storagePath,
 	}
 	if storagePath != "" {
-		loaded, err := loadUserData(storagePath)
+		loaded, inventory, lastDaily, err := loadUserData(storagePath)
 		if err != nil {
 			fmt.Printf("Warning: failed to load data: %v\n", err)
 		} else {
 			c.Pokedex = loaded
+			if inventory != (Inventory{}) {
+				c.Inventory = inventory
+			}
+			c.LastDailyGrant = lastDaily
 		}
 	}
 
 	fmt.Printf("Using trainer: %s\n", userName)
+	if granted, err := applyDailyGrant(c, time.Now()); err != nil {
+		fmt.Printf("Warning: failed to apply daily grant: %v\n", err)
+	} else if granted {
+		fmt.Println("Daily supply: +50 Pokeballs, +20 Great Balls")
+	}
 	startRepl(c)
 }

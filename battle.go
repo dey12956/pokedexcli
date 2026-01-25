@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand"
 	"os"
 	"sort"
 	"strconv"
@@ -254,7 +253,7 @@ func chooseMove(reader *bufio.Reader, pokemon Pokemon) PokemonMove {
 
 func chooseWildMove(pokemon Pokemon) PokemonMove {
 	moves := availableMoves(pokemon)
-	return moves[rand.Intn(len(moves))]
+	return moves[rng.Intn(len(moves))]
 }
 
 func availableMoves(pokemon Pokemon) []PokemonMove {
@@ -277,7 +276,7 @@ func decideFirst(playerMove, wildMove PokemonMove, player Pokemon, wild Pokemon)
 	playerSpeed := player.stats["speed"]
 	wildSpeed := wild.stats["speed"]
 	if playerSpeed == wildSpeed {
-		return rand.Intn(2) == 0
+		return rng.Intn(2) == 0
 	}
 	return playerSpeed > wildSpeed
 }
@@ -287,7 +286,7 @@ func resolveAttack(attacker, defender *battlePokemon, move PokemonMove, isPlayer
 	if accuracy <= 0 {
 		accuracy = 100
 	}
-	if rand.Intn(100) >= accuracy {
+	if rng.Intn(100) >= accuracy {
 		if isPlayer {
 			fmt.Printf("%s used %s but missed!\n", attacker.pokemon.name, move.name)
 		} else {
@@ -322,10 +321,7 @@ func calculateDamage(attacker, defender Pokemon, move PokemonMove) int {
 	base := (power / 3) + (level / 2)
 	bonus := (attack / 8) - (defense / 16)
 	damage := base + bonus
-	if damage < 1 {
-		damage = 1
-	}
-	return damage
+	return max(1, damage)
 }
 
 func maxHP(pokemon Pokemon) int {
@@ -399,7 +395,7 @@ func attemptCatchInBattle(reader *bufio.Reader, c *config, wild *battlePokemon, 
 	chance := base * ballFactor * statusFactor * hpFactor
 	chance = math.Min(0.95, math.Max(0.02, chance))
 
-	return rand.Float64() < chance, nil
+	return rng.Float64() < chance, nil
 }
 
 func applyPotion(reader *bufio.Reader, c *config) (string, error) {
@@ -431,10 +427,7 @@ func awardBattleXP(c *config, pokemon *Pokemon, baseXP int) error {
 		return nil
 	}
 	gained := int(math.Round(float64(baseXP) * 0.9))
-	if gained < 1 {
-		gained = 1
-	}
-	return applyExperience(c, pokemon, gained, true)
+	return applyExperience(c, pokemon, max(1, gained), true)
 }
 
 func awardCaptureXP(c *config, pokemon *Pokemon, baseXP int) error {
@@ -519,6 +512,10 @@ func readChoice(reader *bufio.Reader, max int) (string, bool, error) {
 				b, err := reader.ReadByte()
 				if err != nil {
 					return "", false, err
+				}
+				switch b {
+				case 'y', 'Y', 'n', 'N', 'c', 'C':
+					fmt.Print(string([]byte{b}))
 				}
 				return string([]byte{b}), true, nil
 			}

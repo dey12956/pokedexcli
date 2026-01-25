@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,6 +15,16 @@ func startRepl(c *config) {
 	line := liner.NewLiner()
 	defer line.Close()
 	line.SetCtrlCAborts(true)
+	line.SetCompleter(func(lineText string) []string {
+		matches := make([]string, 0)
+		for name := range getCommands() {
+			if strings.HasPrefix(name, lineText) {
+				matches = append(matches, name)
+			}
+		}
+		sort.Strings(matches)
+		return matches
+	})
 
 	for {
 		input, err := line.Prompt("Pokedex > ")

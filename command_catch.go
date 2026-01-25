@@ -1,29 +1,5 @@
 package main
 
-import "math/rand"
-
-func attemptCatch(c *config, name string) (bool, error) {
-	catchPokeResp, err := c.pokeapiClient.CatchPokemon(name)
-	if err != nil {
-		return false, err
-	}
-
-	baseXP := catchPokeResp.BaseExperience
-	p := catchProb(baseXP)
-
-	if rand.Float64() >= p {
-		return false, nil
-	}
-
-	pokemon, err := buildPokemonFromResponse(c, catchPokeResp)
-	if err != nil {
-		return false, err
-	}
-	appendCaughtPokemon(c, pokemon)
-
-	return true, nil
-}
-
 func catchProb(baseXP int) float64 {
 	const (
 		minXP = 36

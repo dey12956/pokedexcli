@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 )
 
@@ -27,8 +26,8 @@ func randomBallReward() (int, int, int) {
 	const total = 10
 	const types = 3
 	balls := [types]int{1, 1, 1}
-	for i := 0; i < total-types; i++ {
-		balls[rand.Intn(types)]++
+	for range total - types {
+		balls[rng.Intn(types)]++
 	}
 	return balls[0], balls[1], balls[2]
 }

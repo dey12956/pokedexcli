@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+	"os"
 	"time"
 
 	"github.com/dey12956/pokedexcli/internal/pokeapi"
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	pokeClient := pokeapi.NewClient(5*time.Second, 5*time.Minute)
 
 	userName, err := promptUserName()
@@ -30,6 +29,10 @@ func main() {
 		StoragePath:   storagePath,
 	}
 	if storagePath != "" {
+		dataExists := false
+		if _, err := os.Stat(storagePath); err == nil {
+			dataExists = true
+		}
 		loaded, inventory, lastDaily, err := loadUserData(storagePath)
 		if err != nil {
 			fmt.Printf("Warning: failed to load data: %v\n", err)
@@ -39,6 +42,9 @@ func main() {
 				c.Inventory = inventory
 			}
 			c.LastDailyGrant = lastDaily
+		}
+		if err := ensureStarterPokemon(c, dataExists); err != nil {
+			fmt.Printf("Warning: failed to add starter: %v\n", err)
 		}
 	}
 
